@@ -21,4 +21,11 @@ COPY . .
 # Build the actual binary
 RUN cargo build --release
 
-CMD ["target/release/excretor"]
+# Copy metaploy configuration
+COPY metaploy/archive.metaploy.conf /
+COPY metaploy/postinstall.sh /
+
+# Set the postinstall script as executable
+RUN chmod +x /postinstall.sh
+
+CMD ["/postinstall.sh", "target/release/excretor"]
