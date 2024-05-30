@@ -6,6 +6,9 @@ Monorepo of top secret stuff developed in an n-sided polygonal building.
 
 #### Digester
 
+1. Put your slack export inside the `digester` directory
+2. Run `make digest FILE=<filename>`
+
 #### Excretor
 
 1. Install [Rust](https://www.rust-lang.org/tools/install).

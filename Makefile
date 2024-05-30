@@ -25,39 +25,21 @@ help:
 	@echo ""
 	@echo "Running 'make' without a target is equivalent to running 'make build run'."
 
-## dev: Run the excretor in development mode
-dev:
-	@echo "Starting tummy-dev with exposed port"
-	@$(DOCKER_COMPOSE) up tummy-dev -d --wait
-	@echo ""
-	@echo "Starting excretor in development mode."
-	@cd excretor && cargo sqlx prepare && cd ..
-	@bash -c "trap 'echo "";$(MAKEQ) dev-stop; exit 0' SIGINT SIGTERM ERR; $(EXCRETOR_DEV_ENVS) cargo watch -C '$(PROJECT_DIR)/excretor/' -c -x run --ignore '*.css';"
-# In case the excretor gracefully shuts down
-	@$(MAKEQ) dev-stop
-
-## dev-stop: Stop the tummy-dev docker container
-dev-stop:
-	@echo ""
-	@echo "Stopping tummy-dev docker container..."
-	@$(DOCKER_COMPOSE) stop tummy-dev
-	@$(DOCKER_COMPOSE) down tummy-dev
-
-## build: Build the excretor and tummy docker images
+## build: Build the excretor docker image
 build:
-	@echo "Building excretor and tummy docker images..."
-	@$(DOCKER_COMPOSE) build excretor tummy
+	@echo "Building excretor docker image..."
+	@$(DOCKER_COMPOSE) build excretor
 
-## run: Run the excretor and tummy docker containers
+## run: Run the excretor docker container
 run:
-	@echo "Running excretor and tummy docker containers..."
-	@$(DOCKER_COMPOSE) up excretor tummy -d
+	@echo "Running excretor docker container..."
+	@$(DOCKER_COMPOSE) up excretor -d
 
-## stop: Stop the excretor and tummy docker containers
+## stop: Stop the excretor docker container
 stop:
-	@echo "Stopping excretor and tummy docker containers..."
-	@$(DOCKER_COMPOSE) stop excretor tummy
-	@$(DOCKER_COMPOSE) down excretor tummy
+	@echo "Stopping excretor docker container..."
+	@$(DOCKER_COMPOSE) stop excretor
+	@$(DOCKER_COMPOSE) down excretor
 
 ## digest: Run the digester container
 digest:
@@ -65,26 +47,10 @@ ifeq (, $(FILE))
 	@echo "ERROR: No file path provided. Please specify the file path using 'make digest FILE=/path-to-file'"
 	@exit 1;
 endif
-	@echo "Starting tummy-dev with exposed port"
-	@$(DOCKER_COMPOSE) up tummy-dev -d --wait;
-	@echo ""
 	@echo "Starting digester..."
-	@bash -c "trap 'echo ""; popd > /dev/null && $(MAKEQ) dev-stop; exit 0' SIGINT SIGTERM ERR; pushd $(PROJECT_DIR)/digester > /dev/null && go mod download && ZIPFILE_PATH='$(FILE)' $(ENVS) go run .;"
+	@bash -c "trap 'echo ""; $(DOCKER_COMPOSE) down digester; exit 0' SIGINT SIGTERM ERR; ZIPFILE_PATH='$(FILE)' $(DOCKER_COMPOSE) up digester --build --abort-on-container-exit;"
 # In case the digester gracefully shuts down
-	@$(MAKEQ) dev-stop
-
-check_clean:
-	@echo "This will remove the database volume. This action is irreversible."
-	@echo -n "Are you sure you want to proceed? [y/N] " && read ans; \
-    if [ $${ans:-N} != y ] && [ $${ans:-N} != Y ]; then \
-        echo "Operation canceled."; \
-        exit 1; \
-    fi
-
-## clean: Remove the database volume
-clean: check_clean
-	@docker volume rm $(notdir $(PROJECT_DIR))_$(DATABASE_VOLUME)
-	@echo "Database volume removed."
+	@$(DOCKER_COMPOSE) down digester
 
 %:
 ifneq (, $(MAKECMDGOALS))

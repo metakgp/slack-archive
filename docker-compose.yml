@@ -1,4 +1,18 @@
 services:
+    digester:
+        build:
+            context: "./digester"
+            args:
+                ZIPFILE_PATH: ${ZIPFILE_PATH}
+        environment:
+            - TUMMY_USERNAME=${TUMMY_USERNAME}
+            - TUMMY_PASSWORD=${TUMMY_PASSWORD}
+            - TUMMY_DB=${TUMMY_DB}
+            - TUMMY_PORT=${TUMMY_PORT}
+            - TUMMY_HOST=${TUMMY_HOST}
+        networks:
+            - metaploy-private-network
+
     excretor:
         build: "./excretor"
         restart: always
@@ -6,9 +20,9 @@ services:
             - EXCRETOR_PORT=${EXCRETOR_PORT}
             - TUMMY_USERNAME=${TUMMY_USERNAME}
             - TUMMY_PASSWORD=${TUMMY_PASSWORD}
-            - TUMMY_DB=tummy
+            - TUMMY_DB=${TUMMY_DB}
             - TUMMY_PORT=${TUMMY_PORT}
-            - TUMMY_HOST=tummy
+            - TUMMY_HOST=${TUMMY_HOST}
             - STATIC_ASSETS_DIR=${STATIC_ASSETS_DIR}
             - SQLX_OFFLINE=true
         ports:
