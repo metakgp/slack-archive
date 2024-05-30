@@ -1,73 +1,49 @@
 services:
-    tummy:
-        image: postgres
-        restart: always
+    digester:
+        build:
+            context: "./digester"
+            args:
+                ZIPFILE_PATH: ${ZIPFILE_PATH}
         environment:
-            - POSTGRES_USER=${TUMMY_USERNAME}
-            - POSTGRES_PASSWORD=${TUMMY_PASSWORD}
-            - POSTGRES_DB=tummy
-            - PGPORT=${TUMMY_PORT}
-            - PGHOST=tummy
-        volumes:
-            - ./tummy/init.sql:/docker-entrypoint-initdb.d/init.sql
-            - food:/var/lib/postgresql/data
-        healthcheck:
-            test: ["CMD", "pg_isready", "-U", "postgres"]
-            interval: 5s
-            timeout: 3s
-            retries: 20
+            - TUMMY_USERNAME=${TUMMY_USERNAME}
+            - TUMMY_PASSWORD=${TUMMY_PASSWORD}
+            - TUMMY_DB=${TUMMY_DB}
+            - TUMMY_PORT=${TUMMY_PORT}
+            - TUMMY_HOST=${TUMMY_HOST}
         networks:
-            digestive-tract:
-                aliases:
-                    - tummy
-
-    tummy-dev:
-        image: postgres
-        restart: always
-        environment:
-            - POSTGRES_USER=${TUMMY_USERNAME}
-            - POSTGRES_PASSWORD=${TUMMY_PASSWORD}
-            - POSTGRES_DB=tummy
-            - PGPORT=${TUMMY_PORT}
-            - PGHOST=localhost
-        volumes:
-            - ./tummy/init.sql:/docker-entrypoint-initdb.d/init.sql
-            - food:/var/lib/postgresql/data
-        healthcheck:
-            test: ["CMD", "pg_isready", "-U", "postgres"]
-            interval: 5s
-            timeout: 3s
-            retries: 20
-        ports:
-            - "${TUMMY_PORT}:${TUMMY_PORT}"
-        networks:
-            - digestive-tract
+            - metaploy-private-network
 
     excretor:
         build: "./excretor"
         restart: always
-        depends_on:
-            tummy:
-                condition: service_healthy
         environment:
             - EXCRETOR_PORT=${EXCRETOR_PORT}
             - TUMMY_USERNAME=${TUMMY_USERNAME}
             - TUMMY_PASSWORD=${TUMMY_PASSWORD}
-            - TUMMY_DB=tummy
+            - TUMMY_DB=${TUMMY_DB}
             - TUMMY_PORT=${TUMMY_PORT}
-            - TUMMY_HOST=tummy
+            - TUMMY_HOST=${TUMMY_HOST}
             - STATIC_ASSETS_DIR=${STATIC_ASSETS_DIR}
             - SQLX_OFFLINE=true
         ports:
             - "${EXCRETOR_PORT}:${EXCRETOR_PORT}"
         networks:
-            digestive-tract:
+            metaploy-network:
                 aliases:
-                    - excretor
+                    - slack-archive
+            metaploy-private-network:
+        volumes:
+            - nginx-config-volume:/etc/nginx/sites-enabled
 
 networks:
-    digestive-tract:
-        name: digestive-tract
+    metaploy-network:
+        external: true
+        name: metaploy-network
+    metaploy-private-network:
+        external: true
+        name: metaploy-private-network
 
 volumes:
-    food:
+    nginx-config-volume:
+        external: true
+        name: metaploy-nginx-config-volume
