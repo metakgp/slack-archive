@@ -7,9 +7,9 @@ use sqlx::{
 use std::time::Duration;
 
 use crate::{
-    dbmodels::{DBChannel, DBParentMessage, DBReply},
+    dbmodels::{DBChannel, DBParentMessage, DBReply, DBUser},
     env::EnvVars,
-    models::{self, Channel, Message},
+    models::{self, Channel, Message, User},
 };
 
 #[derive(Clone)]
@@ -54,7 +54,9 @@ impl Tummy {
     }
 
     pub async fn get_all_channels(&self) -> color_eyre::Result<Vec<Channel>> {
-        let db_channels = query_as!(DBChannel, "SELECT * FROM channels")
+        let db_channels = query_as!(DBChannel, 
+            "SELECT * FROM channels ORDER BY name ASC"
+        )
             .fetch_all(&self.tummy_conn_pool)
             .await?;
 
@@ -69,7 +71,7 @@ impl Tummy {
         )
         .fetch_one(&self.tummy_conn_pool)
         .await?;
-        Ok(models::Channel::from(channel))
+        Ok(channel.into())
     }
 
     pub async fn fetch_replies(
@@ -101,6 +103,7 @@ impl Tummy {
         channel_id: &str,
         last_msg_timestamp: &Option<chrono::NaiveDateTime>,
         msgs_per_page: &u32,
+        since_timestamp: &chrono::NaiveDateTime,
     ) -> Result<Vec<Message>, sqlx::Error> {
         let fetched_messages = if let Some(timestamp) = last_msg_timestamp {
             query_as!(
@@ -115,10 +118,11 @@ impl Tummy {
                     WHERE channel_id = $1
                     GROUP BY join_ts, parent_user_id
                 ) as c ON messages.ts = c.join_ts AND messages.user_id = c.parent_user_id
-                WHERE channel_id = $1 AND ts > $2 AND messages.parent_user_id = ''
-                ORDER BY ts ASC LIMIT $3
+                WHERE channel_id = $1 AND ts > $2 AND ts > $3 AND messages.parent_user_id = ''
+                ORDER BY ts ASC LIMIT $4
                 "#,
                 channel_id,
+                since_timestamp,
                 timestamp,
                 *msgs_per_page as i64
             )
@@ -137,10 +141,11 @@ impl Tummy {
                     WHERE channel_id = $1
                     GROUP BY join_ts, parent_user_id
                 ) as c ON messages.ts = c.join_ts AND messages.user_id = c.parent_user_id
-                WHERE channel_id = $1 AND messages.parent_user_id = ''
-                ORDER BY ts ASC LIMIT $2
+                WHERE channel_id = $1 AND ts > $2 AND messages.parent_user_id = ''
+                ORDER BY ts ASC LIMIT $3
 	            ",
                 channel_id,
+                since_timestamp,
                 *msgs_per_page as i64
             )
             .fetch_all(&self.tummy_conn_pool)
@@ -150,5 +155,12 @@ impl Tummy {
             .into_iter()
             .map(models::Message::from)
             .collect())
+    }
+
+    pub async fn get_user_info(&self, user_id: &str) -> Result<User, sqlx::Error> {
+        let user = query_as!(DBUser, "SELECT * FROM users WHERE id = $1", user_id)
+            .fetch_one(&self.tummy_conn_pool)
+            .await?;
+        Ok(user.into())
     }
 }

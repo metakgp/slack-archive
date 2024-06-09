@@ -16,9 +16,8 @@ DATABASE_VOLUME := food
 
 default: build run
 
-.PHONY: help dev dev-stop build run stop digest run-digester check_clean clean
-
 ## help: Show this help message
+.PHONY: help
 help:
 	@echo "Usage: make [target]"
 	@sed -n 's/^##//p' $(CURRENT_MAKEFILE) | column -t -s ':' |  sed -e 's/^/ /'
@@ -42,6 +41,7 @@ stop:
 	@$(DOCKER_COMPOSE) down excretor
 
 ## digest: Run the digester container
+.PHONY: digest
 digest:
 ifeq (, $(FILE))
 	@echo "ERROR: No file path provided. Please specify the file path using 'make digest FILE=/path-to-file'"
@@ -56,5 +56,5 @@ endif
 ifneq (, $(MAKECMDGOALS))
 	@echo "Target '$(MAKECMDGOALS)' not found."
 	@echo ""
-	@$(MAKEQ) --no-print-directory help
+	@$(MAKEQ) help
 endif

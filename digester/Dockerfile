@@ -1,21 +1,17 @@
-FROM golang:1.22.3-alpine
+FROM golang:1.22.3-alpine AS builder
 
 WORKDIR /app
+RUN apk add --no-cache build-base
+COPY . .
+RUN go mod download && \
+    go build -o app .
 
-RUN apk add build-base
+FROM alpine:latest
 
-COPY . /app
-
+WORKDIR /app
+COPY --from=builder /app/app .
 ARG ZIPFILE_PATH
-
-COPY ${ZIPFILE_PATH} /app/slack-export.zip
-
-ENV ZIPFILE_PATH=/app/slack-export.zip
-
-RUN go mod download
-
-RUN go build -o app .
-
+COPY ${ZIPFILE_PATH} /slack-export.zip
+ENV ZIPFILE_PATH=/slack-export.zip
 EXPOSE 8080
-
-CMD ./app
+CMD ["./app"]

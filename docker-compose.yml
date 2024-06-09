@@ -25,6 +25,11 @@ services:
             - TUMMY_HOST=${TUMMY_HOST}
             - STATIC_ASSETS_DIR=${STATIC_ASSETS_DIR}
             - SQLX_OFFLINE=true
+            - SLACK_CLIENT_ID=${SLACK_CLIENT_ID}
+            - SLACK_CLIENT_SECRET=${SLACK_CLIENT_SECRET}
+            - SLACK_REDIRECT_URI=${SLACK_REDIRECT_URI}
+            - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
+            - SLACK_AUTH_ENABLE=${SLACK_AUTH_ENABLE}
         networks:
             metaploy-network:
                 aliases:
