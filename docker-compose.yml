@@ -1,5 +1,7 @@
 services:
     digester:
+        image: metakgporg/slack-archive-digester
+        container_name: slack-archive-digester
         build:
             context: "./digester"
             args:
@@ -14,6 +16,8 @@ services:
             - metaploy-private-network
 
     excretor:
+        image: metakgporg/slack-archive-excretor
+        container_name: slack-archive-excretor
         build: "./excretor"
         restart: always
         environment:
